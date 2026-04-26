@@ -1,0 +1,38 @@
+# Variables de entorno — NUNCA subir
+.env
+
+# Entorno virtual
+venv/
+.venv/
+env/
+ENV/
+
+# Archivos de agentes (filesystem local)
+**/agent_files/
+
+# Cache de RAG
+**/.rag_cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Logs
+*.log

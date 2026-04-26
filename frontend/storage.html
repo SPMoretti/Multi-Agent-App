@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Storage — Multi-Agent AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --border:  #2e3148;
+      --accent:  #6c63ff;
+      --accent2: #a78bfa;
+      --text:    #e2e8f0;
+      --muted:   #94a3b8;
+      --radius:  12px;
+      --font:    'Inter', system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    header a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color .15s;
+    }
+
+    header a:hover { color: var(--text); }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .upload-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+
+    .upload-card h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .upload-area:hover, .upload-area.drag-over {
+      border-color: var(--accent);
+      background: rgba(108, 99, 255, .05);
+    }
+
+    .upload-area .icon { font-size: 36px; margin-bottom: 12px; }
+    .upload-area p { margin-top: 6px; font-size: 12px; }
+
+    #file-input { display: none; }
+
+    .upload-status {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 20px;
+      text-align: center;
+    }
+
+    .files-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+
+    .files-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .files-header h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .files-count {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .file-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .file-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .file-table td {
+      padding: 12px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(46, 49, 72, .5);
+    }
+
+    .file-table tr:last-child td { border-bottom: none; }
+    .file-table tr:hover td { background: rgba(255,255,255,.02); }
+
+    .btn-delete, .btn-download {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+
+    .btn-delete:hover {
+      background: rgba(248, 113, 113, .1);
+      color: #f87171;
+      border-color: #f87171;
+    }
+
+    .btn-download:hover {
+      background: rgba(34, 197, 94, .1);
+      color: #22c55e;
+      border-color: #22c55e;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 32px 0;
+    }
+
+    .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+
+    #no-auth {
+      display: none;
+      text-align: center;
+      padding: 80px 24px;
+      color: var(--muted);
+    }
+
+    #no-auth .icon { font-size: 48px; margin-bottom: 16px; }
+    #no-auth h2 { font-size: 18px; color: var(--text); margin-bottom: 8px; }
+    #no-auth a {
+      color: var(--accent2);
+      text-decoration: none;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="index.html">← Volver al chat</a>
+  <h1 style="margin-left:16px;">📁 Storage</h1>
+</header>
+
+<div id="no-auth">
+  <div class="icon">🔒</div>
+  <h2>Acceso restringido</h2>
+  <p>Necesitás estar logueado para acceder a esta página.</p>
+  <br>
+  <a href="index.html">Ir al chat →</a>
+</div>
+
+<div class="container" id="main-content">
+
+  <div class="upload-card">
+    <h2>Subir archivo</h2>
+    <div class="upload-area" id="upload-area">
+      <input type="file" id="file-input"
+        accept=".txt,.csv,.json,.pdf,.docx,.png,.jpg,.jpeg" />
+      <div class="icon">📎</div>
+      <strong>Hacé click o arrastrá un archivo aquí</strong>
+      <p>Formatos: .txt, .json, .pdf, .docx, .png, .jpg, .jpeg</p>
+    </div>
+    <div class="upload-status" id="upload-status"></div>
+  </div>
+
+  <div class="files-card">
+    <div class="files-header">
+      <h2>Archivos disponibles</h2>
+      <span class="files-count" id="files-count"></span>
+    </div>
+    <div id="file-list"></div>
+  </div>
+
+</div>
+
+<script>
+  const API_URL = "https://XXXXXXXXX";
+
+  const currentUser = sessionStorage.getItem("username");
+  if (!currentUser) {
+    document.getElementById("no-auth").style.display = "block";
+    document.getElementById("main-content").style.display = "none";
+  } else {
+    loadFileList();
+  }
+
+  const uploadArea = document.getElementById("upload-area");
+  const fileInput  = document.getElementById("file-input");
+
+  uploadArea.addEventListener("click", () => fileInput.click());
+
+  uploadArea.addEventListener("dragover", e => {
+    e.preventDefault();
+    uploadArea.classList.add("drag-over");
+  });
+
+  uploadArea.addEventListener("dragleave", () => {
+    uploadArea.classList.remove("drag-over");
+  });
+
+  uploadArea.addEventListener("drop", e => {
+    e.preventDefault();
+    uploadArea.classList.remove("drag-over");
+    if (e.dataTransfer.files.length > 0) uploadFile(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files.length > 0) uploadFile(fileInput.files[0]);
+  });
+
+  async function uploadFile(file) {
+    const status = document.getElementById("upload-status");
+    status.textContent = `⏳ Subiendo ${file.name}...`;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    const url = `${API_URL}/upload?username=${encodeURIComponent(currentUser)}`;
+
+    try {
+      const res = await fetch(url, { method: "POST", body: formData });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      status.textContent = `✅ ${file.name} subido correctamente`;
+      fileInput.value = "";
+      setTimeout(() => { status.textContent = ""; }, 3000);
+      loadFileList();
+    } catch (err) {
+      status.textContent = `❌ Error: ${err.message}`;
+    }
+  }
+
+  async function loadFileList() {
+    try {
+      const res = await fetch(`${API_URL}/files/${encodeURIComponent(currentUser)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      renderFileList(data.files || []);
+    } catch (_) {}
+  }
+
+  function renderFileList(files) {
+    const container = document.getElementById("file-list");
+    const countEl   = document.getElementById("files-count");
+
+    const visible = files.filter(f => !f.startsWith("."));
+    countEl.textContent = `${visible.length} archivo${visible.length !== 1 ? "s" : ""}`;
+
+    if (visible.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📭</div>
+          <p>No hay archivos todavía</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <table class="file-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${visible.map(f => {
+            const ext = f.split(".").pop().toUpperCase();
+            return `
+              <tr>
+                <td>📄 ${escapeHtml(f)}</td>
+                <td style="color:var(--muted)">${ext}</td>
+                <td style="text-align:right; display:flex; gap:6px; justify-content:flex-end;">
+                  <button class="btn-delete" onclick="deleteFile('${escapeHtml(f)}')">Eliminar</button>
+                  <button class="btn-download" onclick="downloadFile('${escapeHtml(f)}')">Descargar</button>
+                </td>
+              </tr>`;
+          }).join("")}
+        </tbody>
+      </table>`;
+  }
+
+  async function deleteFile(filename) {
+    if (!confirm(`¿Eliminar "${filename}"?`)) return;
+    try {
+      await fetch(
+        `${API_URL}/files/${encodeURIComponent(currentUser)}/${encodeURIComponent(filename)}`,
+        { method: "DELETE" }
+      );
+      loadFileList();
+    } catch (err) {
+      alert(`Error eliminando: ${err.message}`);
+    }
+  }
+
+  function downloadFile(filename) {
+    const url = `${API_URL}/files/${encodeURIComponent(currentUser)}/${encodeURIComponent(filename)}/download`;
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+</script>
+</body>
+</html>

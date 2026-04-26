@@ -1,0 +1,13 @@
+crewai
+openai
+serpapi
+psycopg2-binary
+pymupdf
+python-docx
+pandas
+numpy
+python-dotenv
+fastapi
+uvicorn[standard]
+python-multipart
+supabase
